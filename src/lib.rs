@@ -21,8 +21,8 @@ enum HexResult {
     Invalid,
 }
 
-/// Converts a hexadecimal byte to a u8 byte
-fn hex_to_byte(hex: u8) -> HexResult {
+/// Decodes a hex byte
+fn decode_hex(hex: u8) -> HexResult {
     match hex {
         b'A'...b'F' => HexResult::Byte((hex - b'A') + 10),
         b'a'...b'f' => HexResult::Byte((hex - b'a') + 10),
@@ -39,10 +39,9 @@ fn bytes_from_hex_str(hex_str: &str) -> Vec<u8> {
     let mut buf = 08;
 
     for byte in hex_str.bytes() {
-        buf <<= 4;
-
-        match hex_to_byte(byte) {
+        match decode_hex(byte) {
             HexResult::Byte(byte) => {
+                buf <<= 4;
                 buf |= byte;
 
                 modulus += 1;
@@ -51,7 +50,7 @@ fn bytes_from_hex_str(hex_str: &str) -> Vec<u8> {
                     bytes.push(buf);
                 }
             }
-            HexResult::Ignore => buf >>= 4,
+            HexResult::Ignore => {}
             HexResult::Invalid => panic!("Character is not a hex character"),
         }
     }
@@ -153,7 +152,6 @@ pub fn fixed_xor(buf1: &str, buf2: &str) -> String {
 /// Returns the character that is xored to the string
 /// to decrypt the cipher
 pub fn xor_cipher(hex: &str) -> char {
-    // build a random string of all chars
     let bytes = bytes_from_hex_str(hex);
     let mut possible_strings = vec![Vec::new(); 256];
 
@@ -167,6 +165,8 @@ pub fn xor_cipher(hex: &str) -> char {
         }
     }
 
+    // Compare the strings by rank and get the byte that creates the
+    // maximum rank string
     let mut max_byte: u8 = 0;
     let mut max_rank = 0;
     for (idx, bytes) in possible_strings.into_iter().enumerate() {
@@ -186,13 +186,13 @@ pub fn xor_cipher(hex: &str) -> char {
 
 #[test]
 fn test_hex_to_byte() {
-    assert_eq!(hex_to_byte(b'~'), HexResult::Invalid);
-    assert_eq!(hex_to_byte(b' '), HexResult::Ignore);
-    assert_eq!(hex_to_byte(b'\t'), HexResult::Ignore);
-    assert_eq!(hex_to_byte(b'\n'), HexResult::Ignore);
-    assert_eq!(hex_to_byte(b'5'), HexResult::Byte(5 as u8));
-    assert_eq!(hex_to_byte(b'F'), HexResult::Byte(15 as u8));
-    assert_eq!(hex_to_byte(b'f'), HexResult::Byte(15 as u8));
+    assert_eq!(decode_hex(b'~'), HexResult::Invalid);
+    assert_eq!(decode_hex(b' '), HexResult::Ignore);
+    assert_eq!(decode_hex(b'\t'), HexResult::Ignore);
+    assert_eq!(decode_hex(b'\n'), HexResult::Ignore);
+    assert_eq!(decode_hex(b'5'), HexResult::Byte(5 as u8));
+    assert_eq!(decode_hex(b'F'), HexResult::Byte(15 as u8));
+    assert_eq!(decode_hex(b'f'), HexResult::Byte(15 as u8));
 }
 
 #[test]
